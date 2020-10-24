@@ -31,7 +31,7 @@ npm start
 ### 4. Open in the browser
 
 After running the command `yarn start` or `npm start`, it will open the server in your default
-browser. If not you can go to your browser and put
+browser. If not, you can go to your browser and put
 
 ```
 localhost:3000
@@ -39,7 +39,7 @@ localhost:3000
 
 in the address bar and it will run.
 
-- If you are not able to run it after this, it means that either 3000 port is occupied with some
+- If you are still not able to run it after the last step, it means that `3000` port is occupied with some
   other process so you will have to go to other port which will be
   ```bash
   localhost:3001

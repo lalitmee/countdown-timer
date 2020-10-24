@@ -18,6 +18,7 @@ function App() {
       flexDirection="column"
       justifyContent="center"
       alignItems="center"
+      my={4}
     >
       <Typography variant="h2" color="primary" style={{ fontWeight: 500 }}>
         Countdown Timer
@@ -31,9 +32,7 @@ function App() {
           handleClose={toggleOpenInstructions}
         />
       )}
-      <Box my={2}>
-        <CountDown />
-      </Box>
+      <CountDown />
     </Box>
   );
 }

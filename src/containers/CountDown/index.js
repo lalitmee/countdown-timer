@@ -158,7 +158,7 @@ function CountDown() {
         justifyContent="center"
         alignItems="center"
         width={1}
-        my={3}
+        my={2}
       >
         <CountDownColumn
           countDownTime={countDownTime}
