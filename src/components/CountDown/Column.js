@@ -16,17 +16,20 @@ function CountDownColumn({
   const value = useMemo(() => {
     switch (columnType) {
       case 'hours':
-        return getPaddedNumberWithZero(
-          Math.floor((countDownTime / 3600000) % 60),
-        );
+        return getPaddedNumberWithZero({
+          number: Math.floor((countDownTime / 3600000) % 60),
+          paddedNumber: 2,
+        });
       case 'minutes':
-        return getPaddedNumberWithZero(
-          Math.floor((countDownTime / 60000) % 60),
-        );
+        return getPaddedNumberWithZero({
+          number: Math.floor((countDownTime / 60000) % 60),
+          paddedNumber: 2,
+        });
       case 'seconds':
-        return getPaddedNumberWithZero(
-          Math.floor((countDownTime / 1000) % 60) % 60,
-        );
+        return getPaddedNumberWithZero({
+          number: Math.floor((countDownTime / 1000) % 60) % 60,
+          paddedNumber: 2,
+        });
       default:
     }
   }, [columnType, countDownTime]);

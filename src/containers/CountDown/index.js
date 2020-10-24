@@ -1,14 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import KeyboardEventHandler from 'react-keyboard-event-handler';
+import isEmpty from 'lodash/isEmpty';
 import makeStyles from '@material-ui/styles/makeStyles';
 import Box from '@material-ui/core/Box';
 import Typography from '@material-ui/core/Typography';
 import IconButton from '@material-ui/core/IconButton';
 import PlayCircleFilledIcon from '@material-ui/icons/PlayCircleFilled';
 import PauseCircleFilledIcon from '@material-ui/icons/PauseCircleFilled';
-import DeleteIcon from '@material-ui/icons/Delete';
 import StopIcon from '@material-ui/icons/Stop';
 
 import CountDownColumn from 'components/CountDown/Column';
+import LapsModal from 'components/LapsModal';
 import { getPaddedNumberWithZero } from 'utils/helper';
 
 const useStyles = makeStyles(theme => ({
@@ -28,7 +30,11 @@ function CountDown() {
   const [countDownTime, setCountDownTime] = useState(0);
   const [startTime, setStartTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
-  // const [miliSeconds, setMiliSeconds] = useState('00');
+  const [lapStarted, setLapStarted] = useState(false);
+  const [lapStartTime, setLapStartTime] = useState(0);
+  const [lapEndTime, setLapEndTime] = useState(0);
+  const [lapsList, setLapsList] = useState([]);
+  const [showLaps, setShowLaps] = useState(false);
   const styles = useStyles({ isRunning });
   function onChangeCountDownTime({ columnType, changeType }) {
     if (changeType === 'increment') {
@@ -56,35 +62,97 @@ function CountDown() {
   useEffect(() => {
     let interval;
     if (isRunning) {
-      setStartTime(countDownTime);
+      const newCountDownTime = countDownTime - 1000;
       interval = setInterval(() => {
-        setCountDownTime(state => state - 1000);
+        setCountDownTime(newCountDownTime);
       }, 1000);
     }
     return () => clearInterval(interval);
   });
+  useEffect(() => {
+    if (lapEndTime) {
+      const lapDuration = lapStartTime - lapEndTime;
+      const totalLaps = lapsList.length || 0;
+      setLapsList(state => {
+        if (totalLaps === 0) {
+          return [
+            {
+              lapDuration,
+              lapStartTime,
+              lapEndTime,
+              index: totalLaps + 1,
+            },
+          ];
+        }
+        return [
+          ...state,
+          {
+            lapDuration,
+            lapStartTime,
+            lapEndTime,
+            index: totalLaps + 1,
+          },
+        ];
+      });
+    }
+  }, [lapEndTime]);
+  const miliSeconds = useMemo(() => {
+    return getPaddedNumberWithZero({
+      number: Math.round((countDownTime - Math.floor(countDownTime)) * 1000),
+      paddedNumber: 3,
+    });
+  }, [countDownTime]);
   function onStart() {
+    setCountDownTime(countDownTime - 1000);
     setStartTime(countDownTime);
-    setCountDownTime(state => state - 100);
     setIsRunning(true);
   }
   function onPause() {
-    setIsRunning(false);
+    if (isRunning) {
+      setStartTime(countDownTime);
+      setCountDownTime(countDownTime);
+      setIsRunning(false);
+    }
   }
   function onResume() {
+    setStartTime(countDownTime);
     setIsRunning(true);
   }
-  function onReset() {
+  function onStop() {
     setCountDownTime(0);
     setStartTime(0);
     setIsRunning(false);
+    setShowLaps(true);
   }
-
-  const miliSeconds = useMemo(() => {
-    return getPaddedNumberWithZero(Math.floor(countDownTime / 10) % 100);
-  }, [countDownTime]);
+  function handleKeyDownEvent({ key }) {
+    if (key === 'space') {
+      if (lapStarted) {
+        setLapEndTime(countDownTime);
+        setLapStarted(false);
+      } else {
+        setLapStarted(true);
+        setLapStartTime(countDownTime);
+      }
+    } else if (key === 'backspace' && !lapStarted) {
+      const lastLap = lapsList[lapsList.length - 1];
+      const { index: lastLapIndex, lapStartTime: lastLapStartTime } =
+        lastLap || {};
+      setLapStarted(true);
+      setLapStartTime(lastLapStartTime);
+      lapsList.splice(lastLapIndex - 1, 1);
+    }
+  }
+  function toggleShowLaps() {
+    setShowLaps(state => !state);
+    setLapsList([]);
+  }
   return (
     <>
+      <KeyboardEventHandler
+        isDisabled={!isRunning}
+        handleKeys={['backspace', 'space']}
+        onKeyEvent={(key, event) => handleKeyDownEvent({ key, event })}
+      />
       <Box
         display="flex"
         justifyContent="center"
@@ -154,7 +222,7 @@ function CountDown() {
             <Typography variant="subtitle2">Pause</Typography>
           </Box>
         )}
-        {!isRunning && startTime > 0 && countDownTime !== 0 && (
+        {!isRunning && countDownTime > 0 && countDownTime === startTime && (
           <Box
             display="flex"
             flexDirection="column"
@@ -177,29 +245,20 @@ function CountDown() {
             justifyContent="center"
             alignItems="center"
           >
-            <IconButton color="primary" onClick={onPause}>
+            <IconButton color="primary" onClick={onStop}>
               <StopIcon fontSize="large" classes={{ root: styles.iconRoot }} />
             </IconButton>
             <Typography variant="subtitle2">Stop</Typography>
           </Box>
         )}
-        {countDownTime !== 0 && (
-          <Box
-            display="flex"
-            flexDirection="column"
-            justifyContent="center"
-            alignItems="center"
-          >
-            <IconButton color="primary" onClick={onReset}>
-              <DeleteIcon
-                fontSize="large"
-                classes={{ root: styles.iconRoot }}
-              />
-            </IconButton>
-            <Typography variant="subtitle2">Reset</Typography>
-          </Box>
-        )}
       </Box>
+      {!isRunning && !isEmpty(lapsList) && showLaps && (
+        <LapsModal
+          open={showLaps}
+          handleClose={toggleShowLaps}
+          laps={lapsList}
+        />
+      )}
     </>
   );
 }
