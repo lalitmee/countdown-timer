@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import isEmpty from 'lodash/isEmpty';
 import makeStyles from '@material-ui/core/styles/makeStyles';
 import Typography from '@material-ui/core/Typography';
 import Table from '@material-ui/core/Table';
@@ -98,36 +99,37 @@ function LapsModal({ laps, open, handleClose }) {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {laps
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map(lap => {
-                    const { index, lapStartTime, lapEndTime, lapDuration } =
-                      lap || {};
-                    return (
-                      <TableRow key={index} className={styles.tableRow}>
-                        <TableCell align="center" component="th" scope="row">
-                          <Typography variant="subtitle2">
-                            <strong>{index}</strong>
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="center">
-                          <Typography variant="subtitle2">
-                            {formatTime(lapStartTime)}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="center">
-                          <Typography variant="subtitle2">
-                            {formatTime(lapEndTime)}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="center">
-                          <Typography variant="subtitle2">
-                            {formatTime(lapDuration)}
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                {!isEmpty(laps) &&
+                  laps
+                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                    .map(lap => {
+                      const { index, lapStartTime, lapEndTime, lapDuration } =
+                        lap || {};
+                      return (
+                        <TableRow key={index} className={styles.tableRow}>
+                          <TableCell align="center" component="th" scope="row">
+                            <Typography variant="subtitle2">
+                              <strong>{index}</strong>
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="center">
+                            <Typography variant="subtitle2">
+                              {formatTime(lapStartTime)}
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="center">
+                            <Typography variant="subtitle2">
+                              {formatTime(lapEndTime)}
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="center">
+                            <Typography variant="subtitle2">
+                              {formatTime(lapDuration)}
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
               </TableBody>
             </Table>
           </TableContainer>
@@ -157,4 +159,5 @@ function LapsModal({ laps, open, handleClose }) {
     </Dialog>
   );
 }
+
 export default LapsModal;

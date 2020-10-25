@@ -21,3 +21,17 @@ export const formatTime = time => {
   });
   return `${hours} : ${minutes} : ${seconds} : ${miliseconds}`;
 };
+
+export const setTimeInLocalStorage = time => {
+  localStorage.setItem('countDownTime', time);
+};
+
+export const setIsRunningInLocalStorage = isRunning => {
+  localStorage.setItem('isRunning', isRunning);
+};
+
+export const getTimeFromLocalStoreage = () => {
+  const countDownTime = localStorage.getItem('countDownTime');
+  const isRunning = localStorage.getItem('isRunning');
+  return { countDownTime, isRunning };
+};

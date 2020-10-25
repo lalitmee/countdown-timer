@@ -11,7 +11,13 @@ import StopIcon from '@material-ui/icons/Stop';
 
 import CountDownColumn from 'components/CountDown/Column';
 import LapsModal from 'components/LapsModal';
-import { getPaddedNumberWithZero } from 'utils/helper';
+import ThresholdWarning from 'components/Threshold';
+import {
+  getPaddedNumberWithZero,
+  setTimeInLocalStorage,
+  setIsRunningInLocalStorage,
+  getTimeFromLocalStoreage,
+} from 'utils/helper';
 
 const useStyles = makeStyles(theme => ({
   gridItemRoot: {
@@ -26,6 +32,8 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
+const lapThreshold = 60000;
+
 function CountDown() {
   const [countDownTime, setCountDownTime] = useState(0);
   const [startTime, setStartTime] = useState(0);
@@ -35,29 +43,8 @@ function CountDown() {
   const [lapEndTime, setLapEndTime] = useState(0);
   const [lapsList, setLapsList] = useState([]);
   const [showLaps, setShowLaps] = useState(false);
+  const [showLapThresholdWarning, setShowLapThresholdWarning] = useState(false);
   const styles = useStyles({ isRunning });
-  function onChangeCountDownTime({ columnType, changeType }) {
-    if (changeType === 'increment') {
-      if (columnType === 'hours' && countDownTime + 3600000 < 216000000) {
-        setCountDownTime(state => state + 3600000);
-      } else if (
-        columnType === 'minutes' &&
-        countDownTime + 60000 < 216000000
-      ) {
-        setCountDownTime(state => state + 60000);
-      } else if (columnType === 'seconds' && countDownTime + 1000 < 216000000) {
-        setCountDownTime(state => state + 1000);
-      }
-    } else if (changeType === 'decrement') {
-      if (columnType === 'hours' && countDownTime - 3600000 >= 0) {
-        setCountDownTime(state => state - 3600000);
-      } else if (columnType === 'minutes' && countDownTime - 60000 >= 0) {
-        setCountDownTime(state => state - 60000);
-      } else if (columnType === 'seconds' && countDownTime - 1000 >= 0) {
-        setCountDownTime(state => state - 1000);
-      }
-    }
-  }
   // eslint-disable-next-line
   useEffect(() => {
     let interval;
@@ -67,8 +54,34 @@ function CountDown() {
         setCountDownTime(newCountDownTime);
       }, 1000);
     }
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+    };
   });
+  useEffect(() => {
+    const {
+      countDownTime: countDownTimeFromLastSession,
+      isRunning: isRunningFromLastSession,
+    } = getTimeFromLocalStoreage();
+    if (countDownTimeFromLastSession) {
+      setCountDownTime(countDownTimeFromLastSession);
+      setStartTime(countDownTimeFromLastSession);
+      setIsRunning(isRunningFromLastSession === 'true' ? true : false);
+    }
+  }, []);
+  useEffect(() => {
+    if (isRunning && lapStarted) {
+      const currentLapDration = lapStartTime - countDownTime;
+      if (currentLapDration === lapThreshold) {
+        toggleShowLapThresholdWarning();
+      }
+    } else if (countDownTime) {
+      setTimeInLocalStorage(countDownTime);
+    }
+  }, [countDownTime]);
+  useEffect(() => {
+    setIsRunningInLocalStorage(isRunning);
+  }, [isRunning]);
   useEffect(() => {
     if (lapEndTime) {
       const lapDuration = lapStartTime - lapEndTime;
@@ -102,6 +115,28 @@ function CountDown() {
       paddedNumber: 3,
     });
   }, [countDownTime]);
+  function onChangeCountDownTime({ columnType, changeType }) {
+    if (changeType === 'increment') {
+      if (columnType === 'hours' && countDownTime + 3600000 < 216000000) {
+        setCountDownTime(state => state + 3600000);
+      } else if (
+        columnType === 'minutes' &&
+        countDownTime + 60000 < 216000000
+      ) {
+        setCountDownTime(state => state + 60000);
+      } else if (columnType === 'seconds' && countDownTime + 1000 < 216000000) {
+        setCountDownTime(state => state + 1000);
+      }
+    } else if (changeType === 'decrement') {
+      if (columnType === 'hours' && countDownTime - 3600000 >= 0) {
+        setCountDownTime(state => state - 3600000);
+      } else if (columnType === 'minutes' && countDownTime - 60000 >= 0) {
+        setCountDownTime(state => state - 60000);
+      } else if (columnType === 'seconds' && countDownTime - 1000 >= 0) {
+        setCountDownTime(state => state - 1000);
+      }
+    }
+  }
   function onStart() {
     setCountDownTime(countDownTime - 1000);
     setStartTime(countDownTime);
@@ -141,6 +176,9 @@ function CountDown() {
       setLapStartTime(lastLapStartTime);
       lapsList.splice(lastLapIndex - 1, 1);
     }
+  }
+  function toggleShowLapThresholdWarning() {
+    setShowLapThresholdWarning(state => !state);
   }
   function toggleShowLaps() {
     setShowLaps(state => !state);
@@ -257,6 +295,12 @@ function CountDown() {
           open={showLaps}
           handleClose={toggleShowLaps}
           laps={lapsList}
+        />
+      )}
+      {showLapThresholdWarning && (
+        <ThresholdWarning
+          open={setShowLapThresholdWarning}
+          handleClose={toggleShowLapThresholdWarning}
         />
       )}
     </>
