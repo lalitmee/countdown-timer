@@ -47,7 +47,7 @@ function CountDown() {
   useEffect(() => {
     let interval;
     if (isRunning) {
-      const newCountDownTime = countDownTime - 10;
+      const newCountDownTime = countDownTime - 18;
       interval = setInterval(() => {
         setCountDownTime(newCountDownTime);
       }, 10);
