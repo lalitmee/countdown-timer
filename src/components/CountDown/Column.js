@@ -17,17 +17,17 @@ function CountDownColumn({
     switch (columnType) {
       case 'hours':
         return getPaddedNumberWithZero({
-          number: Math.floor((countDownTime / 3600000) % 60),
+          number: Math.floor((countDownTime / (1000 * 60 * 60)) % 24),
           paddedNumber: 2,
         });
       case 'minutes':
         return getPaddedNumberWithZero({
-          number: Math.floor((countDownTime / 60000) % 60),
+          number: Math.floor((countDownTime / 1000 / 60) % 60),
           paddedNumber: 2,
         });
       case 'seconds':
         return getPaddedNumberWithZero({
-          number: Math.floor((countDownTime / 1000) % 60) % 60,
+          number: Math.floor((countDownTime / 1000) % 60),
           paddedNumber: 2,
         });
       default:

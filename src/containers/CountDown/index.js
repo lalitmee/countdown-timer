@@ -47,7 +47,7 @@ function CountDown() {
   useEffect(() => {
     let interval;
     if (isRunning) {
-      const newCountDownTime = countDownTime - 18;
+      const newCountDownTime = countDownTime - 10;
       interval = setInterval(() => {
         setCountDownTime(newCountDownTime);
       }, 10);
@@ -76,7 +76,6 @@ function CountDown() {
           preventDuplicate: true,
         });
       }
-    } else if (countDownTime) {
       setTimeInLocalStorage(countDownTime);
     }
   }, [countDownTime]);
