@@ -44,9 +44,9 @@ function Instructions({ open, handleClose }) {
             <ListItemIcon className={styles.icon}>&#9642;</ListItemIcon>
             <ListItemText>
               <Typography align="justify">
-                If you pressed <strong>Space Bar</strong> while a lap is running
-                then you can press <strong>Back Space</strong> key to correct
-                that lap and your last lap will continue from there.
+                If you pressed <strong>Space Bar</strong> by mistake while a lap
+                is running then you can press <strong>Back Space</strong> key to
+                correct that lap and your last lap will continue from there.
               </Typography>
             </ListItemText>
           </ListItem>

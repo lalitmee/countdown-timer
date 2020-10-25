@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useSnackbar } from 'notistack';
 import KeyboardEventHandler from 'react-keyboard-event-handler';
 import isEmpty from 'lodash/isEmpty';
 import makeStyles from '@material-ui/styles/makeStyles';
@@ -11,7 +12,6 @@ import StopIcon from '@material-ui/icons/Stop';
 
 import CountDownColumn from 'components/CountDown/Column';
 import LapsModal from 'components/LapsModal';
-import ThresholdWarning from 'components/Threshold';
 import {
   getPaddedNumberWithZero,
   setTimeInLocalStorage,
@@ -32,27 +32,25 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-const lapThreshold = 60000;
+const lapThreshold = 120000;
 
 function CountDown() {
+  const { enqueueSnackbar } = useSnackbar();
   const [countDownTime, setCountDownTime] = useState(0);
   const [startTime, setStartTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [lapStarted, setLapStarted] = useState(false);
   const [lapStartTime, setLapStartTime] = useState(0);
-  const [lapEndTime, setLapEndTime] = useState(0);
   const [lapsList, setLapsList] = useState([]);
   const [showLaps, setShowLaps] = useState(false);
-  const [showLapThresholdWarning, setShowLapThresholdWarning] = useState(false);
   const styles = useStyles({ isRunning });
-  // eslint-disable-next-line
   useEffect(() => {
     let interval;
     if (isRunning) {
-      const newCountDownTime = countDownTime - 1000;
+      const newCountDownTime = countDownTime - 21;
       interval = setInterval(() => {
         setCountDownTime(newCountDownTime);
-      }, 1000);
+      }, 10);
     }
     return () => {
       clearInterval(interval);
@@ -70,10 +68,13 @@ function CountDown() {
     }
   }, []);
   useEffect(() => {
-    if (isRunning && lapStarted) {
+    if (isRunning) {
       const currentLapDration = lapStartTime - countDownTime;
-      if (currentLapDration === lapThreshold) {
-        toggleShowLapThresholdWarning();
+      if (currentLapDration >= lapThreshold) {
+        enqueueSnackbar('1 Minutes Lap threshold reached', {
+          variant: 'warning',
+          preventDuplicate: true,
+        });
       }
     } else if (countDownTime) {
       setTimeInLocalStorage(countDownTime);
@@ -83,35 +84,43 @@ function CountDown() {
     setIsRunningInLocalStorage(isRunning);
   }, [isRunning]);
   useEffect(() => {
-    if (lapEndTime) {
-      const lapDuration = lapStartTime - lapEndTime;
+    if (lapStarted) {
       const totalLaps = lapsList.length || 0;
-      setLapsList(state => {
-        if (totalLaps === 0) {
-          return [
-            {
-              lapDuration,
-              lapStartTime,
-              lapEndTime,
-              index: totalLaps + 1,
-            },
-          ];
-        }
-        return [
-          ...state,
+      const lastLap = !isEmpty(lapsList) ? lapsList[lapsList.length - 1] : {};
+      const { index: lastLapIndex, lapStartTime: lastLapStartTime } =
+        lastLap || {};
+      const lapDuration = lastLapStartTime - countDownTime;
+      if (!isEmpty(lastLap)) {
+        lapsList.splice(lastLapIndex - 1, 1);
+        lapsList.splice(lastLapIndex - 1, 0, {
+          lapDuration,
+          lapStartTime: lastLapStartTime,
+          lapEndTime: countDownTime,
+          index: lastLapIndex,
+        });
+      }
+      lapsList.push({ index: totalLaps + 1, lapStartTime: countDownTime });
+      setLapsList(lapsList);
+      if (totalLaps > 0) {
+        enqueueSnackbar(
+          `Lap ${totalLaps} Ended, Starting Lap ${totalLaps + 1}`,
           {
-            lapDuration,
-            lapStartTime,
-            lapEndTime,
-            index: totalLaps + 1,
+            variant: 'info',
+            preventDuplicate: true,
           },
-        ];
-      });
+        );
+      } else {
+        enqueueSnackbar(`Lap ${totalLaps + 1} Started`, {
+          variant: 'info',
+          preventDuplicate: true,
+        });
+      }
+      setLapStarted(false);
     }
-  }, [lapEndTime]);
+  }, [lapStarted]);
   const miliSeconds = useMemo(() => {
     return getPaddedNumberWithZero({
-      number: Math.round((countDownTime - Math.floor(countDownTime)) * 1000),
+      number: countDownTime % 1000,
       paddedNumber: 3,
     });
   }, [countDownTime]);
@@ -138,7 +147,6 @@ function CountDown() {
     }
   }
   function onStart() {
-    setCountDownTime(countDownTime - 1000);
     setStartTime(countDownTime);
     setIsRunning(true);
   }
@@ -158,27 +166,45 @@ function CountDown() {
     setStartTime(0);
     setIsRunning(false);
     setShowLaps(true);
+    setTimeInLocalStorage(0);
+    // setting the time for the last lap
+    const lastLap = !isEmpty(lapsList) ? lapsList[lapsList.length - 1] : {};
+    const { index: lastLapIndex, lapStartTime: lastLapStartTime } =
+      lastLap || {};
+    const lapDuration = lastLapStartTime - countDownTime;
+    if (!isEmpty(lastLap)) {
+      lapsList.splice(lastLapIndex - 1, 1);
+      lapsList.splice(lastLapIndex - 1, 0, {
+        lapDuration,
+        lapStartTime: lastLapStartTime,
+        lapEndTime: countDownTime,
+        index: lastLapIndex,
+      });
+    }
   }
   function handleKeyDownEvent({ key }) {
     if (key === 'space') {
-      if (lapStarted) {
-        setLapEndTime(countDownTime);
-        setLapStarted(false);
-      } else {
-        setLapStarted(true);
-        setLapStartTime(countDownTime);
-      }
-    } else if (key === 'backspace' && !lapStarted) {
-      const lastLap = lapsList[lapsList.length - 1];
-      const { index: lastLapIndex, lapStartTime: lastLapStartTime } =
-        lastLap || {};
       setLapStarted(true);
-      setLapStartTime(lastLapStartTime);
+      setLapStartTime(countDownTime);
+    } else if (
+      key === 'backspace' &&
+      !isEmpty(lapsList) &&
+      lapsList.length > 1
+    ) {
+      const lastLap = lapsList[lapsList.length - 1];
+      const { index: lastLapIndex } = lastLap || {};
+      enqueueSnackbar(
+        `Deleting Lap ${lapsList.length}, Continuing Lap ${
+          lapsList.length - 1
+        }`,
+        {
+          variant: 'success',
+          preventDuplicate: true,
+        },
+      );
       lapsList.splice(lastLapIndex - 1, 1);
+      setLapsList(lapsList);
     }
-  }
-  function toggleShowLapThresholdWarning() {
-    setShowLapThresholdWarning(state => !state);
   }
   function toggleShowLaps() {
     setShowLaps(state => !state);
@@ -195,8 +221,8 @@ function CountDown() {
         display="flex"
         justifyContent="center"
         alignItems="center"
-        width={1}
         my={2}
+        ml={9}
       >
         <CountDownColumn
           countDownTime={countDownTime}
@@ -227,7 +253,7 @@ function CountDown() {
           <Typography variant="h5">. {miliSeconds}</Typography>
         </Box>
       </Box>
-      <Box display="flex" justifyContent="center" my={2} mr={6}>
+      <Box display="flex" justifyContent="center" my={2}>
         {!isRunning && countDownTime > 0 && countDownTime !== startTime && (
           <Box
             display="flex"
@@ -290,17 +316,14 @@ function CountDown() {
           </Box>
         )}
       </Box>
-      {!isRunning && !isEmpty(lapsList) && showLaps && (
+      {isRunning && (
+        <Typography variant="body1">Press Space Bar to record Laps</Typography>
+      )}
+      {showLaps && (
         <LapsModal
           open={showLaps}
           handleClose={toggleShowLaps}
           laps={lapsList}
-        />
-      )}
-      {showLapThresholdWarning && (
-        <ThresholdWarning
-          open={setShowLapThresholdWarning}
-          handleClose={toggleShowLapThresholdWarning}
         />
       )}
     </>

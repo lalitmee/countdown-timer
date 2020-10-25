@@ -48,7 +48,7 @@ function LapsModal({ laps, open, handleClose }) {
   const styles = useStyles();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
-  function handleChangePage(newPage) {
+  function handleChangePage(_, newPage) {
     setPage(newPage);
   }
   function handleChangeRowsPerPage(event) {
@@ -59,90 +59,103 @@ function LapsModal({ laps, open, handleClose }) {
     <Dialog maxWidth="lg" onClose={handleClose} open={open}>
       <DialogTitle onClose={handleClose}>Laps Recorded</DialogTitle>
       <DialogContent dividers>
-        <Paper className={styles.paper}>
-          <TableContainer className={styles.tableContainer}>
-            <Table stickyHeader>
-              <TableHead>
-                <TableRow>
-                  <TableCell align="center" className={styles.tableCellHead}>
-                    <Typography
-                      variant="subtitle2"
-                      className={styles.tableHeader}
-                    >
-                      Lap No.
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="center" className={styles.tableCellHead}>
-                    <Typography
-                      variant="subtitle2"
-                      className={styles.tableHeader}
-                    >
-                      Lap Start Time
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="center" className={styles.tableCellHead}>
-                    <Typography
-                      variant="subtitle2"
-                      className={styles.tableHeader}
-                    >
-                      Lap End Time
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="center" className={styles.tableCellHead}>
-                    <Typography
-                      variant="subtitle2"
-                      className={styles.tableHeader}
-                    >
-                      Lap Duration
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {!isEmpty(laps) &&
-                  laps
-                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                    .map(lap => {
-                      const { index, lapStartTime, lapEndTime, lapDuration } =
-                        lap || {};
-                      return (
-                        <TableRow key={index} className={styles.tableRow}>
-                          <TableCell align="center" component="th" scope="row">
-                            <Typography variant="subtitle2">
-                              <strong>{index}</strong>
-                            </Typography>
-                          </TableCell>
-                          <TableCell align="center">
-                            <Typography variant="subtitle2">
-                              {formatTime(lapStartTime)}
-                            </Typography>
-                          </TableCell>
-                          <TableCell align="center">
-                            <Typography variant="subtitle2">
-                              {formatTime(lapEndTime)}
-                            </Typography>
-                          </TableCell>
-                          <TableCell align="center">
-                            <Typography variant="subtitle2">
-                              {formatTime(lapDuration)}
-                            </Typography>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-              </TableBody>
-            </Table>
-          </TableContainer>
-          <TablePagination
-            rowsPerPageOptions={[5, 10, 25, 100]}
-            component="div"
-            count={laps.length}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onChangePage={handleChangePage}
-            onChangeRowsPerPage={handleChangeRowsPerPage}
-          />
-        </Paper>
+        {isEmpty(laps) ? (
+          <Box minWidth={500} display="flex" justifyContent="center">
+            <Typography>No Laps Recorded</Typography>
+          </Box>
+        ) : (
+          <Paper className={styles.paper}>
+            <TableContainer className={styles.tableContainer}>
+              <Table stickyHeader>
+                <TableHead>
+                  <TableRow>
+                    <TableCell align="center" className={styles.tableCellHead}>
+                      <Typography
+                        variant="subtitle2"
+                        className={styles.tableHeader}
+                      >
+                        No.
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="center" className={styles.tableCellHead}>
+                      <Typography
+                        variant="subtitle2"
+                        className={styles.tableHeader}
+                      >
+                        Start Time
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="center" className={styles.tableCellHead}>
+                      <Typography
+                        variant="subtitle2"
+                        className={styles.tableHeader}
+                      >
+                        End Time
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="center" className={styles.tableCellHead}>
+                      <Typography
+                        variant="subtitle2"
+                        className={styles.tableHeader}
+                      >
+                        Duration
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {!isEmpty(laps) &&
+                    laps
+                      .slice(
+                        page * rowsPerPage,
+                        page * rowsPerPage + rowsPerPage,
+                      )
+                      .map(lap => {
+                        const { index, lapStartTime, lapEndTime, lapDuration } =
+                          lap || {};
+                        return (
+                          <TableRow key={index} className={styles.tableRow}>
+                            <TableCell
+                              align="center"
+                              component="th"
+                              scope="row"
+                            >
+                              <Typography variant="subtitle2">
+                                <strong>{index}</strong>
+                              </Typography>
+                            </TableCell>
+                            <TableCell align="center">
+                              <Typography variant="subtitle2" color="primary">
+                                {formatTime(lapStartTime)}
+                              </Typography>
+                            </TableCell>
+                            <TableCell align="center">
+                              <Typography variant="subtitle2" color="primary">
+                                {formatTime(lapEndTime)}
+                              </Typography>
+                            </TableCell>
+                            <TableCell align="center">
+                              <Typography variant="subtitle2" color="primary">
+                                {formatTime(lapDuration)}
+                              </Typography>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            <TablePagination
+              rowsPerPageOptions={[5, 10, 25, 100]}
+              component="div"
+              count={laps.length}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onChangePage={handleChangePage}
+              onChangeRowsPerPage={handleChangeRowsPerPage}
+            />
+          </Paper>
+        )}
       </DialogContent>
       <DialogActions>
         <Box mx={2}>

@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import { SnackbarProvider } from 'notistack';
 import ThemeProvider from '@material-ui/styles/ThemeProvider';
 
 import App from './App';
@@ -10,7 +11,15 @@ import * as serviceWorker from './serviceWorker';
 ReactDOM.render(
   <React.StrictMode>
     <ThemeProvider theme={theme}>
-      <App />
+      <SnackbarProvider
+        maxSnack={1}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'center',
+        }}
+      >
+        <App />
+      </SnackbarProvider>
     </ThemeProvider>
   </React.StrictMode>,
   document.getElementById('root'),
