@@ -9,6 +9,7 @@ import IconButton from '@material-ui/core/IconButton';
 import PlayCircleFilledIcon from '@material-ui/icons/PlayCircleFilled';
 import PauseCircleFilledIcon from '@material-ui/icons/PauseCircleFilled';
 import StopIcon from '@material-ui/icons/Stop';
+import DeleteIcon from '@material-ui/icons/Delete';
 
 import CountDownColumn from 'components/CountDown/Column';
 import LapsModal from 'components/LapsModal';
@@ -48,14 +49,12 @@ function CountDown() {
   useEffect(() => {
     let interval;
     if (isRunning) {
-      const newCountDownTime = countDownTime - 10;
+      const newCountDownTime = countDownTime - 22;
       interval = setInterval(() => {
         setCountDownTime(newCountDownTime);
       }, 10);
     }
-    return () => {
-      clearInterval(interval);
-    };
+    return () => clearInterval(interval);
   });
 
   useEffect(() => {
@@ -67,8 +66,8 @@ function CountDown() {
       isRunning: isRunningFromLastSession,
     } = getTimeFromLocalStoreage();
     if (countDownTimeFromLastSession) {
-      setCountDownTime(countDownTimeFromLastSession);
-      setStartTime(countDownTimeFromLastSession);
+      setCountDownTime(Number(countDownTimeFromLastSession));
+      setStartTime(Number(countDownTimeFromLastSession));
       setIsRunning(isRunningFromLastSession === 'true' ? true : false);
     }
     window.addEventListener('beforeunload', beforeUnload);
@@ -138,23 +137,21 @@ function CountDown() {
   }, [countDownTime]);
 
   function onChangeCountDownTime({ columnType, changeType }) {
+    const time = Math.round(Number(countDownTime));
     if (changeType === 'increment') {
-      if (columnType === 'hours' && countDownTime + 3600000 < 216000000) {
+      if (columnType === 'hours' && time + 3600000 < 216000000) {
         setCountDownTime(state => state + 3600000);
-      } else if (
-        columnType === 'minutes' &&
-        countDownTime + 60000 < 216000000
-      ) {
+      } else if (columnType === 'minutes' && time + 60000 < 216000000) {
         setCountDownTime(state => state + 60000);
-      } else if (columnType === 'seconds' && countDownTime + 1000 < 216000000) {
+      } else if (columnType === 'seconds' && time + 1000 < 216000000) {
         setCountDownTime(state => state + 1000);
       }
     } else if (changeType === 'decrement') {
-      if (columnType === 'hours' && countDownTime - 3600000 >= 0) {
+      if (columnType === 'hours' && time - 3600000 >= 0) {
         setCountDownTime(state => state - 3600000);
-      } else if (columnType === 'minutes' && countDownTime - 60000 >= 0) {
+      } else if (columnType === 'minutes' && time - 60000 >= 0) {
         setCountDownTime(state => state - 60000);
-      } else if (columnType === 'seconds' && countDownTime - 1000 >= 0) {
+      } else if (columnType === 'seconds' && time - 1000 >= 0) {
         setCountDownTime(state => state - 1000);
       }
     }
@@ -176,6 +173,13 @@ function CountDown() {
   function onResume() {
     setStartTime(countDownTime);
     setIsRunning(true);
+  }
+
+  function onReset() {
+    setCountDownTime(0);
+    setStartTime(0);
+    setIsRunning(false);
+    setTimeInLocalStorage(0);
   }
 
   function onStop() {
@@ -331,6 +335,22 @@ function CountDown() {
               <StopIcon fontSize="large" classes={{ root: styles.iconRoot }} />
             </IconButton>
             <Typography variant="subtitle2">Stop</Typography>
+          </Box>
+        )}
+        {!isRunning && countDownTime > 0 && (
+          <Box
+            display="flex"
+            flexDirection="column"
+            justifyContent="center"
+            alignItems="center"
+          >
+            <IconButton color="primary" onClick={onReset}>
+              <DeleteIcon
+                fontSize="large"
+                classes={{ root: styles.iconRoot }}
+              />
+            </IconButton>
+            <Typography variant="subtitle2">Reset</Typography>
           </Box>
         )}
       </Box>

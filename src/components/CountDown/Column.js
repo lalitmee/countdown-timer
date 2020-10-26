@@ -17,7 +17,7 @@ function CountDownColumn({
     switch (columnType) {
       case 'hours':
         return getPaddedNumberWithZero({
-          number: Math.floor((countDownTime / (1000 * 60 * 60)) % 24),
+          number: Math.floor((countDownTime / 1000 / 60 / 60) % 24),
           paddedNumber: 2,
         });
       case 'minutes':
@@ -27,7 +27,7 @@ function CountDownColumn({
         });
       case 'seconds':
         return getPaddedNumberWithZero({
-          number: Math.floor((countDownTime / 1000) % 60),
+          number: Math.floor((countDownTime / 1000) % 60) % 60,
           paddedNumber: 2,
         });
       default:
