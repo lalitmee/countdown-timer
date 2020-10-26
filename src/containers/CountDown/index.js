@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useSnackbar } from 'notistack';
 import KeyboardEventHandler from 'react-keyboard-event-handler';
 import isEmpty from 'lodash/isEmpty';
@@ -37,6 +37,7 @@ const lapThreshold = 120000;
 function CountDown() {
   const { enqueueSnackbar } = useSnackbar();
   const [countDownTime, setCountDownTime] = useState(0);
+  const countDownTimeRef = useRef();
   const [startTime, setStartTime] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [lapStarted, setLapStarted] = useState(false);
@@ -56,7 +57,11 @@ function CountDown() {
       clearInterval(interval);
     };
   });
+
   useEffect(() => {
+    const beforeUnload = () => {
+      setTimeInLocalStorage(countDownTimeRef.current);
+    };
     const {
       countDownTime: countDownTimeFromLastSession,
       isRunning: isRunningFromLastSession,
@@ -66,22 +71,29 @@ function CountDown() {
       setStartTime(countDownTimeFromLastSession);
       setIsRunning(isRunningFromLastSession === 'true' ? true : false);
     }
+    window.addEventListener('beforeunload', beforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', beforeUnload);
+    };
   }, []);
+
   useEffect(() => {
+    countDownTimeRef.current = countDownTime;
     if (isRunning) {
       const currentLapDration = lapStartTime - countDownTime;
       if (currentLapDration >= lapThreshold) {
-        enqueueSnackbar('1 Minutes Lap threshold reached', {
+        enqueueSnackbar('1 Minute Lap threshold reached', {
           variant: 'warning',
           preventDuplicate: true,
         });
       }
-      setTimeInLocalStorage(countDownTime);
     }
   }, [countDownTime]);
+
   useEffect(() => {
     setIsRunningInLocalStorage(isRunning);
   }, [isRunning]);
+
   useEffect(() => {
     if (lapStarted) {
       const totalLaps = lapsList.length || 0;
@@ -117,12 +129,14 @@ function CountDown() {
       setLapStarted(false);
     }
   }, [lapStarted]);
+
   const miliSeconds = useMemo(() => {
     return getPaddedNumberWithZero({
       number: countDownTime % 1000,
       paddedNumber: 3,
     });
   }, [countDownTime]);
+
   function onChangeCountDownTime({ columnType, changeType }) {
     if (changeType === 'increment') {
       if (columnType === 'hours' && countDownTime + 3600000 < 216000000) {
@@ -145,10 +159,12 @@ function CountDown() {
       }
     }
   }
+
   function onStart() {
     setStartTime(countDownTime);
     setIsRunning(true);
   }
+
   function onPause() {
     if (isRunning) {
       setStartTime(countDownTime);
@@ -156,10 +172,12 @@ function CountDown() {
       setIsRunning(false);
     }
   }
+
   function onResume() {
     setStartTime(countDownTime);
     setIsRunning(true);
   }
+
   function onStop() {
     setCountDownTime(0);
     setStartTime(0);
@@ -181,6 +199,7 @@ function CountDown() {
       });
     }
   }
+
   function handleKeyDownEvent({ key }) {
     if (key === 'space') {
       setLapStarted(true);
