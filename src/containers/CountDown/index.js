@@ -5,6 +5,7 @@ import isEmpty from 'lodash/isEmpty';
 import makeStyles from '@material-ui/styles/makeStyles';
 import Box from '@material-ui/core/Box';
 import Typography from '@material-ui/core/Typography';
+import Button from '@material-ui/core/Button';
 import IconButton from '@material-ui/core/IconButton';
 import PlayCircleFilledIcon from '@material-ui/icons/PlayCircleFilled';
 import PauseCircleFilledIcon from '@material-ui/icons/PauseCircleFilled';
@@ -33,10 +34,10 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-const lapThreshold = 120000;
+const lapThreshold = 60000;
 
 function CountDown() {
-  const { enqueueSnackbar } = useSnackbar();
+  const { enqueueSnackbar, closeSnackbar } = useSnackbar();
   const [countDownTime, setCountDownTime] = useState(0);
   const countDownTimeRef = useRef();
   const [startTime, setStartTime] = useState(0);
@@ -49,10 +50,10 @@ function CountDown() {
   useEffect(() => {
     let interval;
     if (isRunning) {
-      const newCountDownTime = countDownTime - 22;
+      const newCountDownTime = countDownTime - 100;
       interval = setInterval(() => {
         setCountDownTime(newCountDownTime);
-      }, 10);
+      }, 100);
     }
     return () => clearInterval(interval);
   });
@@ -78,16 +79,25 @@ function CountDown() {
 
   useEffect(() => {
     countDownTimeRef.current = countDownTime;
-    if (isRunning) {
-      const currentLapDration = lapStartTime - countDownTime;
-      if (currentLapDration >= lapThreshold) {
-        enqueueSnackbar('1 Minute Lap threshold reached', {
-          variant: 'warning',
-          preventDuplicate: true,
-        });
-      }
+    const currentLapDuration = lapStartTime - countDownTime;
+    if (isRunning && currentLapDuration >= lapThreshold) {
+      enqueueSnackbar('1 Minute Lap threshold reached', {
+        variant: 'warning',
+        preventDuplicate: true,
+        action,
+      });
     }
   }, [countDownTime]);
+
+  const action = key => (
+    <Button
+      onClick={() => {
+        closeSnackbar(key);
+      }}
+    >
+      Ok
+    </Button>
+  );
 
   useEffect(() => {
     setIsRunningInLocalStorage(isRunning);
@@ -207,7 +217,7 @@ function CountDown() {
   function handleKeyDownEvent({ key }) {
     if (key === 'space') {
       setLapStarted(true);
-      setLapStartTime(countDownTime);
+      setLapStartTime(countDownTimeRef.current);
     } else if (
       key === 'backspace' &&
       !isEmpty(lapsList) &&
