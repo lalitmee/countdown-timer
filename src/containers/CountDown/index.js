@@ -14,12 +14,16 @@ import DeleteIcon from '@material-ui/icons/Delete';
 
 import CountDownColumn from 'components/CountDown/Column';
 import LapsModal from 'components/LapsModal';
+import LapsModalTable from 'components/LapsModal/Table';
 import {
   getPaddedNumberWithZero,
   setTimeInLocalStorage,
   setIsRunningInLocalStorage,
   getTimeFromLocalStoreage,
 } from 'utils/helper';
+import * as globalConstants from 'utils/constants';
+
+const { THEME_COLORS } = globalConstants;
 
 const useStyles = makeStyles(theme => ({
   gridItemRoot: {
@@ -45,7 +49,7 @@ function CountDown() {
   const [lapStarted, setLapStarted] = useState(false);
   const [lapStartTime, setLapStartTime] = useState(0);
   const [lapsList, setLapsList] = useState([]);
-  const [showLaps, setShowLaps] = useState(false);
+  const [showLapsModal, setShowLapsModal] = useState(false);
   const styles = useStyles({ isRunning });
   useEffect(() => {
     let interval;
@@ -58,6 +62,7 @@ function CountDown() {
     return () => clearInterval(interval);
   });
 
+  // getting the stored state of the timer from localstorage
   useEffect(() => {
     const beforeUnload = () => {
       setTimeInLocalStorage(countDownTimeRef.current);
@@ -119,7 +124,12 @@ function CountDown() {
           index: lastLapIndex,
         });
       }
-      lapsList.push({ index: totalLaps + 1, lapStartTime: countDownTime });
+      lapsList.push({
+        index: totalLaps + 1,
+        lapStartTime: countDownTime,
+        lapDuration: 'Running',
+        lapEndTime: 'Running',
+      });
       setLapsList(lapsList);
       if (totalLaps > 0) {
         enqueueSnackbar(
@@ -145,6 +155,13 @@ function CountDown() {
       paddedNumber: 3,
     });
   }, [countDownTime]);
+
+  function showLapsTable() {
+    if (!isEmpty(lapsList)) {
+      return true;
+    }
+    return false;
+  }
 
   function onChangeCountDownTime({ columnType, changeType }) {
     const time = Math.round(Number(countDownTime));
@@ -190,13 +207,14 @@ function CountDown() {
     setStartTime(0);
     setIsRunning(false);
     setTimeInLocalStorage(0);
+    setLapsList([]);
   }
 
   function onStop() {
     setCountDownTime(0);
     setStartTime(0);
     setIsRunning(false);
-    setShowLaps(true);
+    setShowLapsModal(true);
     setTimeInLocalStorage(0);
     // setting the time for the last lap
     const lastLap = !isEmpty(lapsList) ? lapsList[lapsList.length - 1] : {};
@@ -218,28 +236,41 @@ function CountDown() {
     if (key === 'space') {
       setLapStarted(true);
       setLapStartTime(countDownTimeRef.current);
-    } else if (
-      key === 'backspace' &&
-      !isEmpty(lapsList) &&
-      lapsList.length > 1
-    ) {
-      const lastLap = lapsList[lapsList.length - 1];
-      const { index: lastLapIndex } = lastLap || {};
-      enqueueSnackbar(
-        `Deleting Lap ${lapsList.length}, Continuing Lap ${
-          lapsList.length - 1
-        }`,
-        {
+    } else if (key === 'backspace' && !isEmpty(lapsList)) {
+      if (lapsList.length === 1) {
+        enqueueSnackbar(`Deleting Lap ${lapsList.length}`, {
           variant: 'success',
           preventDuplicate: true,
-        },
-      );
-      lapsList.splice(lastLapIndex - 1, 1);
-      setLapsList(lapsList);
+        });
+        setLapsList([]);
+      } else {
+        enqueueSnackbar(
+          `Deleting Lap ${lapsList.length}, Continuing Lap ${
+            lapsList.length - 1
+          }`,
+          {
+            variant: 'success',
+            preventDuplicate: true,
+          },
+        );
+        const lastLap = lapsList[lapsList.length - 2];
+        const currentLap = lapsList[lapsList.length - 1];
+        const { index: currentLapIndex } = currentLap || {};
+        const { index: lastLapIndex, lapStartTime } = lastLap || {};
+        lapsList.splice(lastLapIndex - 1, 1);
+        lapsList.splice(lastLapIndex - 1, 0, {
+          index: lastLapIndex,
+          lapStartTime,
+          lapEndTime: 'Running',
+          lapDuration: 'Running',
+        });
+        lapsList.splice(currentLapIndex - 1, 1);
+        setLapsList(lapsList);
+      }
     }
   }
-  function toggleShowLaps() {
-    setShowLaps(state => !state);
+  function toggleShowLapsModal() {
+    setShowLapsModal(state => !state);
     setLapsList([]);
   }
   return (
@@ -250,127 +281,146 @@ function CountDown() {
         onKeyEvent={(key, event) => handleKeyDownEvent({ key, event })}
       />
       <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        my={2}
-        ml={9}
+        position="sticky"
+        bgcolor={THEME_COLORS.BACKGROUND_WHITE}
+        width={1}
+        top={10}
+        zIndex={100}
+        py={2}
       >
-        <CountDownColumn
-          countDownTime={countDownTime}
-          columnType="hours"
-          onChangeCountDownTime={onChangeCountDownTime}
-          isRunning={isRunning}
-        />
-        <Box mt={3}>
-          <Typography variant="h3">:</Typography>
-        </Box>
-        <CountDownColumn
-          countDownTime={countDownTime}
-          columnType="minutes"
-          onChangeCountDownTime={onChangeCountDownTime}
-          isRunning={isRunning}
-        />
-        <Box mt={3}>
-          <Typography variant="h3">:</Typography>
-        </Box>
-        <CountDownColumn
-          countDownTime={countDownTime}
-          columnType="seconds"
-          onChangeCountDownTime={onChangeCountDownTime}
-          isRunning={isRunning}
-        />
-        <Box minWidth={70} mt={5}>
-          <Typography variant="caption">miliseconds</Typography>
-          <Typography variant="h5">. {miliSeconds}</Typography>
-        </Box>
-      </Box>
-      <Box display="flex" justifyContent="center" my={2}>
-        {!isRunning && countDownTime > 0 && countDownTime !== startTime && (
-          <Box
-            display="flex"
-            flexDirection="column"
-            justifyContent="center"
-            alignItems="center"
-          >
-            <IconButton color="primary" onClick={onStart}>
-              <PlayCircleFilledIcon
-                fontSize="large"
-                classes={{ root: styles.iconRoot }}
-              />
-            </IconButton>
-            <Typography variant="subtitle2">Start</Typography>
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          my={2}
+          ml={9}
+        >
+          <CountDownColumn
+            countDownTime={countDownTime}
+            columnType="hours"
+            onChangeCountDownTime={onChangeCountDownTime}
+            isRunning={isRunning}
+          />
+          <Box mt={3}>
+            <Typography variant="h3">:</Typography>
           </Box>
-        )}
+          <CountDownColumn
+            countDownTime={countDownTime}
+            columnType="minutes"
+            onChangeCountDownTime={onChangeCountDownTime}
+            isRunning={isRunning}
+          />
+          <Box mt={3}>
+            <Typography variant="h3">:</Typography>
+          </Box>
+          <CountDownColumn
+            countDownTime={countDownTime}
+            columnType="seconds"
+            onChangeCountDownTime={onChangeCountDownTime}
+            isRunning={isRunning}
+          />
+          <Box minWidth={70} mt={5}>
+            <Typography variant="caption">miliseconds</Typography>
+            <Typography variant="h5">. {miliSeconds}</Typography>
+          </Box>
+        </Box>
+        <Box display="flex" justifyContent="center" my={2}>
+          {!isRunning && countDownTime > 0 && countDownTime !== startTime && (
+            <Box
+              display="flex"
+              flexDirection="column"
+              justifyContent="center"
+              alignItems="center"
+            >
+              <IconButton color="primary" onClick={onStart}>
+                <PlayCircleFilledIcon
+                  fontSize="large"
+                  classes={{ root: styles.iconRoot }}
+                />
+              </IconButton>
+              <Typography variant="subtitle2">Start</Typography>
+            </Box>
+          )}
+          {isRunning && (
+            <Box
+              display="flex"
+              flexDirection="column"
+              justifyContent="center"
+              alignItems="center"
+            >
+              <IconButton color="primary" onClick={onPause}>
+                <PauseCircleFilledIcon
+                  fontSize="large"
+                  classes={{ root: styles.iconRoot }}
+                />
+              </IconButton>
+              <Typography variant="subtitle2">Pause</Typography>
+            </Box>
+          )}
+          {!isRunning && countDownTime > 0 && countDownTime === startTime && (
+            <Box
+              display="flex"
+              flexDirection="column"
+              justifyContent="center"
+              alignItems="center"
+            >
+              <IconButton color="primary" onClick={onResume}>
+                <PlayCircleFilledIcon
+                  fontSize="large"
+                  classes={{ root: styles.iconRoot }}
+                />
+              </IconButton>
+              <Typography variant="subtitle2">Resume</Typography>
+            </Box>
+          )}
+          {isRunning && (
+            <Box
+              display="flex"
+              flexDirection="column"
+              justifyContent="center"
+              alignItems="center"
+            >
+              <IconButton color="primary" onClick={onStop}>
+                <StopIcon
+                  fontSize="large"
+                  classes={{ root: styles.iconRoot }}
+                />
+              </IconButton>
+              <Typography variant="subtitle2">Stop</Typography>
+            </Box>
+          )}
+          {!isRunning && countDownTime > 0 && (
+            <Box
+              display="flex"
+              flexDirection="column"
+              justifyContent="center"
+              alignItems="center"
+            >
+              <IconButton color="primary" onClick={onReset}>
+                <DeleteIcon
+                  fontSize="large"
+                  classes={{ root: styles.iconRoot }}
+                />
+              </IconButton>
+              <Typography variant="subtitle2">Reset</Typography>
+            </Box>
+          )}
+        </Box>
         {isRunning && (
-          <Box
-            display="flex"
-            flexDirection="column"
-            justifyContent="center"
-            alignItems="center"
-          >
-            <IconButton color="primary" onClick={onPause}>
-              <PauseCircleFilledIcon
-                fontSize="large"
-                classes={{ root: styles.iconRoot }}
-              />
-            </IconButton>
-            <Typography variant="subtitle2">Pause</Typography>
-          </Box>
-        )}
-        {!isRunning && countDownTime > 0 && countDownTime === startTime && (
-          <Box
-            display="flex"
-            flexDirection="column"
-            justifyContent="center"
-            alignItems="center"
-          >
-            <IconButton color="primary" onClick={onResume}>
-              <PlayCircleFilledIcon
-                fontSize="large"
-                classes={{ root: styles.iconRoot }}
-              />
-            </IconButton>
-            <Typography variant="subtitle2">Resume</Typography>
-          </Box>
-        )}
-        {isRunning && (
-          <Box
-            display="flex"
-            flexDirection="column"
-            justifyContent="center"
-            alignItems="center"
-          >
-            <IconButton color="primary" onClick={onStop}>
-              <StopIcon fontSize="large" classes={{ root: styles.iconRoot }} />
-            </IconButton>
-            <Typography variant="subtitle2">Stop</Typography>
-          </Box>
-        )}
-        {!isRunning && countDownTime > 0 && (
-          <Box
-            display="flex"
-            flexDirection="column"
-            justifyContent="center"
-            alignItems="center"
-          >
-            <IconButton color="primary" onClick={onReset}>
-              <DeleteIcon
-                fontSize="large"
-                classes={{ root: styles.iconRoot }}
-              />
-            </IconButton>
-            <Typography variant="subtitle2">Reset</Typography>
-          </Box>
+          <Typography align="center" variant="body1">
+            Press Space Bar to record Laps
+          </Typography>
         )}
       </Box>
-      {isRunning && (
-        <Typography variant="body1">Press Space Bar to record Laps</Typography>
+      {showLapsTable() && (
+        <Box my={2}>
+          <LapsModalTable laps={lapsList} />
+        </Box>
       )}
-      {showLaps && (
+      {showLapsModal && (
         <LapsModal
-          open={showLaps}
-          handleClose={toggleShowLaps}
+          open={showLapsModal}
+          handleClose={toggleShowLapsModal}
           laps={lapsList}
         />
       )}
