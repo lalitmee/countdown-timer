@@ -77,7 +77,7 @@ function CountDown() {
       setCountDownTime(Number(countDownTimeFromLastSession));
       setStartTime(Number(countDownTimeFromLastSession));
       setIsRunning(isRunningFromLastSession === 'true' ? true : false);
-      setLapThreshold(Number(lapThresholdFromLastSession));
+      setLapThreshold(Number(lapThresholdFromLastSession) || 40000);
     }
     window.addEventListener('beforeunload', beforeUnload);
     return () => {
