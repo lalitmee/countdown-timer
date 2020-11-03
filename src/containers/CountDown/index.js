@@ -14,6 +14,7 @@ import DeleteIcon from '@material-ui/icons/Delete';
 
 import CountDownColumn from 'components/CountDown/Column';
 import LapsModal from 'components/LapsModal';
+import LapThreshold from 'components/Threshold';
 import LapsModalTable from 'components/LapsModal/Table';
 import {
   getPaddedNumberWithZero,
@@ -38,8 +39,6 @@ const useStyles = makeStyles(theme => ({
   },
 }));
 
-const lapThreshold = 60000;
-
 function CountDown() {
   const { enqueueSnackbar, closeSnackbar } = useSnackbar();
   const [countDownTime, setCountDownTime] = useState(0);
@@ -48,8 +47,10 @@ function CountDown() {
   const [isRunning, setIsRunning] = useState(false);
   const [lapStarted, setLapStarted] = useState(false);
   const [lapStartTime, setLapStartTime] = useState(0);
+  const [lapThreshold, setLapThreshold] = useState(40000);
   const [lapsList, setLapsList] = useState([]);
   const [showLapsModal, setShowLapsModal] = useState(false);
+  const [showLapThresholdModal, setShowLapThresholdModal] = useState(false);
   const styles = useStyles({ isRunning });
   useEffect(() => {
     let interval;
@@ -65,16 +66,18 @@ function CountDown() {
   // getting the stored state of the timer from localstorage
   useEffect(() => {
     const beforeUnload = () => {
-      setTimeInLocalStorage(countDownTimeRef.current);
+      setTimeInLocalStorage({ time: countDownTimeRef.current, lapThreshold });
     };
     const {
       countDownTime: countDownTimeFromLastSession,
       isRunning: isRunningFromLastSession,
+      lapThreshold: lapThresholdFromLastSession,
     } = getTimeFromLocalStoreage();
     if (countDownTimeFromLastSession) {
       setCountDownTime(Number(countDownTimeFromLastSession));
       setStartTime(Number(countDownTimeFromLastSession));
       setIsRunning(isRunningFromLastSession === 'true' ? true : false);
+      setLapThreshold(Number(lapThresholdFromLastSession));
     }
     window.addEventListener('beforeunload', beforeUnload);
     return () => {
@@ -86,11 +89,19 @@ function CountDown() {
     countDownTimeRef.current = countDownTime;
     const currentLapDuration = lapStartTime - countDownTime;
     if (isRunning && currentLapDuration >= lapThreshold) {
-      enqueueSnackbar('1 Minute Lap threshold reached', {
+      const currentLap = lapsList[lapsList.length - 1];
+      const { index } = currentLap || {};
+      lapsList.splice(index - 1, 1);
+      lapsList.splice(index - 1, 0, {
+        ...currentLap,
+        lapThresholdReached: true,
+      });
+      enqueueSnackbar('Lap threshold reached', {
         variant: 'warning',
         preventDuplicate: true,
         action,
       });
+      setLapsList(lapsList);
     }
   }, [countDownTime]);
 
@@ -118,6 +129,7 @@ function CountDown() {
       if (!isEmpty(lastLap)) {
         lapsList.splice(lastLapIndex - 1, 1);
         lapsList.splice(lastLapIndex - 1, 0, {
+          ...lastLap,
           lapDuration,
           lapStartTime: lastLapStartTime,
           lapEndTime: countDownTime,
@@ -155,6 +167,10 @@ function CountDown() {
       paddedNumber: 3,
     });
   }, [countDownTime]);
+
+  function onLapThresholdChange(event) {
+    setLapThreshold(event.target.value);
+  }
 
   function showLapsTable() {
     if (!isEmpty(lapsList)) {
@@ -206,7 +222,7 @@ function CountDown() {
     setCountDownTime(0);
     setStartTime(0);
     setIsRunning(false);
-    setTimeInLocalStorage(0);
+    setTimeInLocalStorage({ time: 0, lapThreshold: 40000 });
     setLapsList([]);
   }
 
@@ -215,7 +231,7 @@ function CountDown() {
     setStartTime(0);
     setIsRunning(false);
     setShowLapsModal(true);
-    setTimeInLocalStorage(0);
+    setTimeInLocalStorage({ time: 0, lapThreshold: 40000 });
     // setting the time for the last lap
     const lastLap = !isEmpty(lapsList) ? lapsList[lapsList.length - 1] : {};
     const { index: lastLapIndex, lapStartTime: lastLapStartTime } =
@@ -272,6 +288,9 @@ function CountDown() {
   function toggleShowLapsModal() {
     setShowLapsModal(state => !state);
     setLapsList([]);
+  }
+  function toggleShowLapThresholdModal() {
+    setShowLapThresholdModal(state => !state);
   }
   return (
     <>
@@ -411,7 +430,20 @@ function CountDown() {
             Press Space Bar to record Laps
           </Typography>
         )}
+        <Box display="flex" justifyContent="center" my={1}>
+          <Button variant="outlined" onClick={toggleShowLapThresholdModal}>
+            Lap Threshold
+          </Button>
+        </Box>
       </Box>
+      {showLapThresholdModal && (
+        <LapThreshold
+          open={showLapThresholdModal}
+          handleClose={toggleShowLapThresholdModal}
+          lapThreshold={lapThreshold}
+          onLapThresholdChange={onLapThresholdChange}
+        />
+      )}
       {showLapsTable() && (
         <Box my={2}>
           <LapsModalTable laps={lapsList} />

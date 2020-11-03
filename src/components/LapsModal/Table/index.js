@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import isEmpty from 'lodash/isEmpty';
 import makeStyles from '@material-ui/core/styles/makeStyles';
 import Typography from '@material-ui/core/Typography';
+import Tooltip from '@material-ui/core/Tooltip';
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
 import TableCell from '@material-ui/core/TableCell';
@@ -11,6 +12,8 @@ import TablePagination from '@material-ui/core/TablePagination';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Paper from '@material-ui/core/Paper';
+import CancelOutlinedIcon from '@material-ui/icons/CancelOutlined';
+import CheckCircleOutlineOutlinedIcon from '@material-ui/icons/CheckCircleOutlineOutlined';
 
 import { formatTime } from 'utils/helper';
 
@@ -55,7 +58,7 @@ function LapsModalTable({ laps, showPagination = false }) {
   }
   return (
     <Paper className={styles.paper}>
-      <TableContainer className={showPagination ? styles.tableContainer : {}}>
+      <TableContainer className={showPagination ? styles.tableContainer : ''}>
         <Table stickyHeader>
           <TableHead>
             <TableRow>
@@ -79,13 +82,28 @@ function LapsModalTable({ laps, showPagination = false }) {
                   Duration
                 </Typography>
               </TableCell>
+              {showPagination && (
+                <TableCell align="center" className={styles.tableCellHead}>
+                  <Typography
+                    variant="subtitle2"
+                    className={styles.tableHeader}
+                  >
+                    Threshold Reached
+                  </Typography>
+                </TableCell>
+              )}
             </TableRow>
           </TableHead>
           <TableBody>
             {!isEmpty(laps) &&
               lapsList.map(lap => {
-                const { index, lapStartTime, lapEndTime, lapDuration } =
-                  lap || {};
+                const {
+                  index,
+                  lapStartTime,
+                  lapEndTime,
+                  lapDuration,
+                  lapThresholdReached = false,
+                } = lap || {};
                 return (
                   <TableRow key={index} className={styles.tableRow}>
                     <TableCell align="center" component="th" scope="row">
@@ -110,6 +128,18 @@ function LapsModalTable({ laps, showPagination = false }) {
                           : formatTime(lapDuration)}
                       </Typography>
                     </TableCell>
+                    {showPagination && (
+                      <TableCell align="center">
+                        {lapThresholdReached && (
+                          <Tooltip title="Lap Threshold Reached">
+                            <CancelOutlinedIcon color="error" />
+                          </Tooltip>
+                        )}
+                        {!lapThresholdReached && (
+                          <CheckCircleOutlineOutlinedIcon color="primary" />
+                        )}
+                      </TableCell>
+                    )}
                   </TableRow>
                 );
               })}
