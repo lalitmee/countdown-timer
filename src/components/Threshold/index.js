@@ -27,6 +27,7 @@ function LapThreshold({
         </Typography>
         <Box display="flex" justifyContent="center" my={2}>
           <TextField
+            id="lap-threshold"
             variant="outlined"
             label="Lap Threshold"
             defaultValue={40}

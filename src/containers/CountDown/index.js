@@ -431,7 +431,11 @@ function CountDown() {
           </Typography>
         )}
         <Box display="flex" justifyContent="center" my={1}>
-          <Button variant="outlined" onClick={toggleShowLapThresholdModal}>
+          <Button
+            id="lap-threshold-button"
+            variant="outlined"
+            onClick={toggleShowLapThresholdModal}
+          >
             Lap Threshold
           </Button>
         </Box>
